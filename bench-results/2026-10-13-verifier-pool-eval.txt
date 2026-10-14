@@ -1,0 +1,15 @@
+verifier: verifier   pools: llm-labels-v2.jsonl, llm-labels-v3.jsonl
+groups: 112   candidates: 122 (tp=120, fp=2)   errors: 0   verifier time: 347s
+false positives dropped:   2 of 2 (100%)
+duplicate TPs removed:     3  (truth still covered -- dedup that worked)
+truths LOST:               1 of 110 covered (1%)  <- the verifier's own false positives
+precision before: 0.98   after: 1.00
+
+  [TRUTH LOST] llm-labels-v3.jsonl/E logic-off-by-one L3 (logic): Loop iterates one past the end of prices.
+      -> verifier: The changed line does iterate to len(prices), but no loop body is shown, so there is no visible evidence that i is used to index prices or that this causes an actual off-by-one error.
+  [fp dropped] llm-labels-v2.jsonl/C clean-extract-helper L6 (performance): The aggregation now calls `line_total` once per item, adding per-iteration Python function-call overhead compared with t
+      -> verifier: This is a speculative micro-performance concern with no evidence in the change that this code is hot or that the helper call overhead is material.
+  [fp dropped] llm-labels-v3.jsonl/D clean-extract-helper L6 (performance): The new helper call adds a Python function call for every item in the aggregation.
+      -> verifier: The helper call is visible, but the performance impact is speculative/micro-optimization without evidence that this aggregation is hot or that item counts are large enough to matter.
+
+  (3 duplicate removals not listed; see --json for all)

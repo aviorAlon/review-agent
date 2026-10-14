@@ -1,0 +1,11 @@
+verifier: verifier   pools: httpx-recent-BF-labels.jsonl, httpx-recent-DE-labels.jsonl
+groups: 14   candidates: 24 (tp=0, fp=24)   errors: 0   verifier time: 224s
+false positives dropped:   2 of 24 (8%)
+duplicate TPs removed:     0  (truth still covered -- dedup that worked)
+truths LOST:               0 of 0 covered (0%)  <- the verifier's own false positives
+precision before: 0.00   after: 0.00
+
+  [fp dropped] httpx-recent-DE-labels.jsonl/E git-e9cabc8e1d L389 (performance): This performs a local import on every asynchronous request.
+      -> verifier: This is a speculative micro-performance concern about Python's cached import mechanism on a hot path, not a concrete defect visible from the change.
+  [fp dropped] httpx-recent-DE-labels.jsonl/E git-e9cabc8e1d L240 (performance): This performs a local import on every synchronous request.
+      -> verifier: This is a speculative micro-performance concern about Python's cached import mechanism on a hot path, not a concrete defect visible from the change.

@@ -1,0 +1,42 @@
+name: review
+
+# The tool reviews its own pull requests. This is also the live test of
+# `--post github` (idempotent fingerprints, summary comment updated in place).
+#
+# Needs one repository secret: REVIEW_LLM_API_KEY, matching `api_key_env` in
+# .review-agent.yaml. Until it is set the step fails loudly but does not
+# block the PR (continue-on-error).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: review the pull request
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVIEW_LLM_API_KEY: ${{ secrets.REVIEW_LLM_API_KEY }}
+        run: |
+          review-agent review --base "origin/${{ github.base_ref }}" --post github --audit-dir audit --json > review.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-audit
+          path: |
+            audit
+            review.json
+          if-no-files-found: ignore

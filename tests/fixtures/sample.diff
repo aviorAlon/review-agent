@@ -1,0 +1,18 @@
+diff --git a/app/auth.py b/app/auth.py
+--- a/app/auth.py
++++ b/app/auth.py
+@@ -1,8 +1,11 @@
+ def check_permission(user, resource):
+-    if user.is_admin:
+-        return True
+-    return resource.owner_id == user.id
++    # fast path
++    if user.role in ("admin", "owner"):
++        return True
++    if resource.owner_id == user.id:
++        return True
++    return resource.is_public
+ 
+ 
+ def load_user(user_id):
+     return db.get(user_id)

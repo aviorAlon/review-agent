@@ -1,0 +1,24 @@
+name: release
+
+# Publishes to PyPI on a version tag using trusted publishing (no token in
+# secrets). Before the first release the maintainer must register the
+# project on PyPI and add this repository/workflow as a trusted publisher.
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1

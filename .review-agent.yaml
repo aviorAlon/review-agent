@@ -1,0 +1,32 @@
+# This repository's own review configuration, used by .github/workflows/review.yml.
+# One generalist + one verifier (flag mode). Set the REVIEW_LLM_API_KEY secret;
+# to route through a proxy instead of a vendor, add `api_base:` to both agents
+# and keep the `openai/` prefix on the model name.
+version: "1"
+
+agents:
+  - id: generalist
+    type: llm
+    role: baseline
+    category: other
+    model: anthropic/claude-sonnet-4-5
+    api_key_env: REVIEW_LLM_API_KEY
+    temperature: null
+    focus: "any real defect: security (auth/permission bypass, injection, path traversal, hardcoded secrets, unsafe deserialization), logic (races/TOCTOU, off-by-one, None handling, stale closures, swallowed exceptions), performance (N+1 queries, O(n*m) loops, redundant work per iteration)"
+    max_findings: 10
+
+  - id: verifier
+    type: llm
+    role: verifier
+    model: anthropic/claude-sonnet-4-5
+    api_key_env: REVIEW_LLM_API_KEY
+    temperature: null
+
+verifier_mode: flag
+
+exclude:
+  - "bench-results/*"
+  - "*.lock"
+  - "*.min.js"
+
+per_agent_timeout_s: 180

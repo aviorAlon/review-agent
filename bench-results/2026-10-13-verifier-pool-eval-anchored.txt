@@ -1,0 +1,11 @@
+verifier: verifier   pools: llm-labels-v2.jsonl, llm-labels-v3.jsonl
+groups: 112   candidates: 122 (tp=120, fp=2)   errors: 0   verifier time: 392s
+false positives dropped:   1 of 2 (50%)
+duplicate TPs removed:     3  (truth still covered -- dedup that worked)
+truths LOST:               0 of 110 covered (0%)  <- the verifier's own false positives
+precision before: 0.98   after: 0.99
+
+  [fp dropped] llm-labels-v3.jsonl/D clean-extract-helper L6 (performance): The new helper call adds a Python function call for every item in the aggregation.
+      -> verifier: The helper call is visible, but the claimed performance problem depends on speculative assumptions that this path is hot or items is large; without evidence it is not an actionable defect.
+
+  (3 duplicate removals not listed; see --json for all)

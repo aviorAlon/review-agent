@@ -1,0 +1,27 @@
+verifier: verifier   pools: llm-labels-v2.jsonl, llm-labels-v3.jsonl
+groups: 112   candidates: 122 (tp=120, fp=2)   errors: 0   verifier time: 368s
+false positives dropped:   2 of 2 (100%)
+duplicate TPs removed:     3  (truth still covered -- dedup that worked)
+truths LOST:               7 of 110 covered (6%)  <- the verifier's own false positives
+precision before: 0.98   after: 1.00
+
+  [TRUTH LOST] llm-labels-v2.jsonl/B logic-none-deref L1 (generalist): Removing the `None` guard can make `email_for` crash when no user is found.
+      -> verifier: The removed None check was after `return user.email`, so it was unreachable and did not previously preserve missing-user behavior; removing it does not introduce the described crash.
+  [TRUTH LOST] llm-labels-v2.jsonl/C sec-auth-guard-removed L7 (security): Removed admin authorization check allows any caller to delete accounts.
+      -> verifier: The code shown has always performed db.delete before the removed admin check, so the deleted check did not enforce authorization before account deletion as claimed.
+  [TRUTH LOST] llm-labels-v2.jsonl/D logic-none-deref L1 (logic): Removing the `user is None` guard can cause a None dereference when `db.get(user_id)` returns no user.
+      -> verifier: The removed None guard was after an unconditional return and therefore unreachable, so removing it does not change behavior or introduce the claimed None-dereference risk.
+  [TRUTH LOST] llm-labels-v3.jsonl/B logic-none-deref L2 (generalist): Removing the None check can make email_for raise when the user lookup misses.
+      -> verifier: The removed None check was after `return user.email` and therefore unreachable, so removing it does not newly cause misses to raise or change behavior as claimed.
+  [TRUTH LOST] llm-labels-v3.jsonl/D logic-none-deref L1 (logic): Removing the None check can cause email_for to dereference a missing user.
+      -> verifier: The removed None check was after `return user.email`, so it was unreachable and did not guard the dereference; removing it does not introduce the claimed behavior change.
+  [TRUTH LOST] llm-labels-v3.jsonl/E logic-none-deref L3 (logic): Removing the None check after get() can cause email_for to raise when the user is missing.
+      -> verifier: The deleted None check was after `return user.email`, so it was unreachable and the function would not have returned None before; the cited change does not introduce the claimed behavior cha
+  [TRUTH LOST] llm-labels-v3.jsonl/F logic-none-deref L1 (generalist): Removing the None guard can cause email_for to crash when the user is not found.
+      -> verifier: The removed None guard was after the `return user.email` and therefore unreachable, so its removal does not change missing-user behavior or newly introduce the described crash.
+  [fp dropped] llm-labels-v2.jsonl/C clean-extract-helper L6 (performance): The aggregation now calls `line_total` once per item, adding per-iteration Python function-call overhead compared with t
+      -> verifier: This is a speculative micro-performance concern; the change does add a helper call per item, but there is no evidence that this path is hot or that the overhead is a real defect.
+  [fp dropped] llm-labels-v3.jsonl/D clean-extract-helper L6 (performance): The new helper call adds a Python function call for every item in the aggregation.
+      -> verifier: This is a speculative micro-optimization; the change visibly adds a helper call, but there is no evidence in the diff that this path is hot or that the overhead is a real defect.
+
+  (3 duplicate removals not listed; see --json for all)

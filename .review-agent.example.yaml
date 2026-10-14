@@ -1,0 +1,105 @@
+# Copy to <repo>/.review-agent.yaml. Versioned with the code: changing the
+# roster or thresholds is a PR, not a prompt in someone's head.
+#
+# Default shape = one generalist finder + one verifier. Category specialists
+# are OPT-IN (enabled: false below). On the benchmark in bench-results/, a
+# single generalist call of the same model matched three specialists on
+# recall with fewer duplicates, no clean-case false positives and under
+# half the agent time. Turn specialists on only if you have evidence they
+# catch something the generalist misses on *your* code.
+#
+# role: baseline | specialist (default) | verifier
+#   baseline   - the single first-stage reviewer (benchmark arms A/B/F)
+#   specialist - fanned-out reviewers (benchmark arms C/D/E)
+#   verifier   - second stage: re-reads every finding against the diff and
+#                drops contradicted / speculative / duplicate ones. Fail-open.
+version: "1"
+
+agents:
+  - id: generalist
+    type: llm
+    role: baseline
+    category: other
+    model: anthropic/claude-sonnet-4-5
+    focus: "any real defect: security (auth/permission bypass, injection, path traversal, hardcoded secrets, unsafe deserialization), logic (races/TOCTOU, off-by-one, None handling, stale closures, swallowed exceptions), performance (N+1 queries, O(n*m) loops, redundant work per iteration)"
+    max_findings: 10
+
+  - id: verifier
+    type: llm
+    role: verifier
+    model: anthropic/claude-sonnet-4-5
+
+  # --- opt-in specialists -------------------------------------------------
+  - id: security
+    type: llm
+    category: security
+    model: anthropic/claude-sonnet-4-5
+    focus: "security defects: auth/permission bypass, injection, path traversal, hardcoded secrets"
+    max_findings: 5
+    enabled: false
+
+  - id: logic
+    type: llm
+    category: logic
+    model: anthropic/claude-sonnet-4-5
+    focus: "logic defects: race conditions, off-by-one, None handling, stale closures, swallowed errors"
+    max_findings: 5
+    enabled: false
+
+  # Any external coding-agent CLI plugs in like this. It gets the diff +
+  # structural context + the JSON contract on stdin; structured JSON is
+  # preferred, free text is tolerated (flagged unstructured: kept for audit,
+  # never scored or posted inline). Verified with Claude Code: this exact
+  # command returned structured findings, including a cross-file one.
+  - id: claude-code
+    type: cli
+    role: baseline
+    category: other
+    command: ["claude", "-p", "You are reviewing a code change. The change, its structural context and the exact JSON output contract are on stdin. Respond with ONLY that JSON array."]
+    enabled: false
+
+  # Zero-cost deterministic backend, useful as a smoke test in CI.
+  - id: smoke
+    type: fake
+    category: other
+    enabled: false
+
+# Point any llm agent at an OpenAI-compatible proxy instead of a vendor:
+#   model: openai/<name the proxy exposes>
+#   api_base: https://your-proxy/v1
+#   api_key_env: LLM_PROXY_API_KEY      # env var NAME; the value never lives in yaml
+#   temperature: null                   # omit for reasoning models that reject it
+
+aggregation:
+  line_window: 3        # same file+category within N lines => duplicate
+  max_per_category: 10
+  max_total: 25
+
+# flag (default): a verifier verdict downgrades the finding to INFO and
+# annotates it with the reason, so a wrong verdict costs nothing.
+# drop: the finding is removed from what gets posted (kept in --json output).
+verifier_mode: flag
+
+# Cost guardrails. Anything cut is listed under "Not reviewed" in the summary.
+limits:
+  max_files: 40
+  max_hunks: 150
+  max_hunk_lines: 400      # bigger hunks are generated or vendored code
+  max_prompt_chars: 120000 # ~30k tokens of diff; hunks past this are skipped
+
+# Files never worth a model call. Globs match the whole path or the basename.
+# Omit this key to get the built-in default list.
+exclude:
+  - "*/vendor/*"
+  - "*/node_modules/*"
+  - "*.min.js"
+  - "*.lock"
+  - "*_pb2.py"
+  - "*.generated.*"
+
+per_agent_timeout_s: 180
+
+# Free-form, handed to every agent verbatim as "repo rules".
+rules:
+  must_not_log_pii: true
+  auth_module: app/auth.py

@@ -1,0 +1,67 @@
+# Roster for running the LLM arms through the company proxy.
+#
+#   set -a; . ./.env; set +a          # .env holds LLM_PROXY_API_KEY=...
+#   review-agent bench --config bench-proxy.yaml --arms A,B,C,D
+#
+# Model names are whatever the proxy exposes -- list them with:
+#   curl -H "Authorization: Bearer $LLM_PROXY_API_KEY" https://llm-proxy.example.com/v1/models
+# and adjust `model:` below (keep the `openai/` prefix; it selects the
+# OpenAI-compatible transport, not the vendor).
+version: "1"
+
+agents:
+  # The single-agent control for arms A/B: same model, one call, told to
+  # look for everything. Without this, "multi-agent wins" is unmeasurable.
+  - id: generalist
+    type: llm
+    role: baseline
+    category: other
+    model: openai/gpt-5.5
+    api_base: https://llm-proxy.example.com/v1
+    api_key_env: LLM_PROXY_API_KEY
+    focus: "any real defect: security (auth bypass, injection, path traversal, secrets, unsafe deserialization), logic (races/TOCTOU, off-by-one, None handling, stale closures, swallowed exceptions), performance (N+1 queries, O(n*m) loops)"
+    max_findings: 10
+
+  - id: security
+    type: llm
+    category: security
+    model: openai/gpt-5.5
+    api_base: https://llm-proxy.example.com/v1
+    api_key_env: LLM_PROXY_API_KEY
+    focus: "security defects: auth/permission bypass, injection, path traversal, hardcoded secrets, unsafe deserialization"
+    max_findings: 5
+
+  - id: logic
+    type: llm
+    category: logic
+    model: openai/gpt-5.5
+    api_base: https://llm-proxy.example.com/v1
+    api_key_env: LLM_PROXY_API_KEY
+    focus: "logic defects: race conditions / TOCTOU, off-by-one, None handling, stale closures, swallowed exceptions"
+    max_findings: 5
+
+  - id: performance
+    type: llm
+    category: performance
+    model: openai/gpt-5.5
+    api_base: https://llm-proxy.example.com/v1
+    api_key_env: LLM_PROXY_API_KEY
+    focus: "performance defects: N+1 queries, O(n*m) membership tests inside loops, redundant work per iteration"
+    max_findings: 5
+
+  # Second stage (arm E): sees the diff + the aggregated candidate list and
+  # removes what should not reach the author. Fail-open: it can only remove
+  # by saying "drop" explicitly; an error keeps everything.
+  - id: verifier
+    type: llm
+    role: verifier
+    model: openai/gpt-5.5
+    api_base: https://llm-proxy.example.com/v1
+    api_key_env: LLM_PROXY_API_KEY
+
+aggregation:
+  line_window: 3
+  max_per_category: 10
+  max_total: 25
+
+per_agent_timeout_s: 120

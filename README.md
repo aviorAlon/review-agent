@@ -1,3 +1,5 @@
+English | [中文](README.zh-CN.md)
+
 # review-agent
 
 A multi-agent orchestration + deep-context enhancement layer for AI code

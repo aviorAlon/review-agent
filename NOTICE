@@ -2,7 +2,7 @@ review-agent
 Copyright 2026 review-agent contributors
 
 This product includes software developed as part of the review-agent
-project (https://github.com/<org>/review-agent), licensed under the
+project (https://github.com/aviorAlon/review-agent), licensed under the
 Apache License, Version 2.0.
 
 Benchmark cases under bench-results/ mined from encode/httpx

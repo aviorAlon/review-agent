@@ -45,9 +45,9 @@ languages = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/<org>/review-agent"
-Issues = "https://github.com/<org>/review-agent/issues"
-Changelog = "https://github.com/<org>/review-agent/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/aviorAlon/review-agent"
+Issues = "https://github.com/aviorAlon/review-agent/issues"
+Changelog = "https://github.com/aviorAlon/review-agent/blob/main/CHANGELOG.md"
 
 [project.scripts]
 review-agent = "review_agent.cli:app"
